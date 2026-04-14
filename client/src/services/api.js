@@ -1,0 +1,1 @@
+export const getStorageKey = (email) => `ht_jobs_${email}`;
