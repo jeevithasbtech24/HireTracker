@@ -156,8 +156,8 @@ export default function Dashboard({ user }) {
               </div>
 
               <div className="job-meta">
-                {job.location && <span>📍 {job.location}</span>}
-                {job.salary && <span>💰 {job.salary}</span>}
+                {job.location && <span> {job.location}</span>}
+                {job.salary && <span> {job.salary}</span>}
                 {job.url && (
                   <span>
                     <a href={job.url} target="_blank" rel="noreferrer">
