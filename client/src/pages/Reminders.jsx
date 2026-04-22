@@ -1,33 +1,51 @@
-import { useState } from "react";
-
-export default function Reminders({ user, onBack }) {
+import { useState, useEffect, useCallback } from "react";
+ 
+export default function Reminders({ user, onBack, showToast }) {
   const storageKey = `ht_reminders_${user.email}`;
   const [reminders, setReminders] = useState(() =>
     JSON.parse(localStorage.getItem(storageKey) || "[]")
   );
   const [text, setText] = useState("");
   const [date, setDate] = useState("");
-
+ 
+  const today = new Date().toISOString().split("T")[0];
+ 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const checkDueToday = useCallback(() => {
+    const due = reminders.filter((r) => r.date === today);
+    if (due.length > 0) {
+      showToast(`⏰ Due today: ${due.map((r) => r.text).join(", ")}`, "success");
+    }
+  }, []);
+ 
+  useEffect(() => {
+    checkDueToday();
+  }, []);
+ 
   const save = (updated) => {
     setReminders(updated);
     localStorage.setItem(storageKey, JSON.stringify(updated));
   };
-
+ 
   const handleAdd = () => {
     if (!text.trim() || !date) return;
     const newReminder = { id: Date.now(), text, date };
     save([newReminder, ...reminders]);
+    showToast("Reminder added!", "success");
     setText("");
     setDate("");
   };
-
-  const handleDelete = (id) => save(reminders.filter((r) => r.id !== id));
-
+ 
+  const handleDelete = (id) => {
+    save(reminders.filter((r) => r.id !== id));
+    showToast("Reminder deleted", "error");
+  };
+ 
   const formatDate = (iso) =>
     new Date(iso).toLocaleDateString("en-IN", {
-      day: "numeric", month: "short", year: "numeric"
+      day: "numeric", month: "short", year: "numeric",
     });
-
+ 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
@@ -38,7 +56,7 @@ export default function Reminders({ user, onBack }) {
           cursor: "pointer", color: "#64748b", fontWeight: "600"
         }}>← Back</button>
       </div>
-
+ 
       <div className="job-card" style={{ maxWidth: "500px", marginBottom: "24px" }}>
         <h3 style={{ marginBottom: "16px", color: "#1e293b" }}>Add Reminder</h3>
         <input
@@ -57,7 +75,7 @@ export default function Reminders({ user, onBack }) {
         />
         <button className="btn-add" onClick={handleAdd}>+ Add</button>
       </div>
-
+ 
       {reminders.length === 0 ? (
         <div className="empty-state">
           <h3>No reminders yet</h3>
@@ -66,9 +84,24 @@ export default function Reminders({ user, onBack }) {
       ) : (
         <div className="jobs-grid">
           {reminders.map((r) => (
-            <div className="job-card" key={r.id}>
+            <div
+              className="job-card"
+              key={r.id}
+              style={r.date === today ? {
+                borderColor: "#a78bfa",
+                boxShadow: "0 0 0 2px rgba(167,139,250,0.3)"
+              } : {}}
+            >
+              {r.date === today && (
+                <div style={{
+                  fontSize: "0.75rem", fontWeight: "700",
+                  color: "#a78bfa", marginBottom: "6px", letterSpacing: "0.05em"
+                }}>
+                  ⏰ DUE TODAY
+                </div>
+              )}
               <div className="job-title">{r.text}</div>
-              <div className="job-date" style={{ marginTop: "8px" }}> {formatDate(r.date)}</div>
+              <div className="job-date" style={{ marginTop: "8px" }}>📅 {formatDate(r.date)}</div>
               <div className="job-actions" style={{ marginTop: "12px" }}>
                 <button className="btn-delete" onClick={() => handleDelete(r.id)}>Delete</button>
               </div>

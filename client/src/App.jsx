@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -7,6 +7,7 @@ import Wishlist from "./pages/Wishlist";
 import Reminders from "./pages/Reminders";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import Toast from "./components/Toast";
 import "./App.css";
 
 export default function App() {
@@ -15,6 +16,22 @@ export default function App() {
     return stored ? JSON.parse(stored) : null;
   });
   const [page, setPage] = useState("login");
+  const [toast, setToast] = useState(null);
+
+  // Check reminders due today whenever user logs in
+  useEffect(() => {
+    if (!user) return;
+    const storageKey = `ht_reminders_${user.email}`;
+    const reminders = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    const today = new Date().toISOString().split("T")[0];
+    const due = reminders.filter((r) => r.date === today);
+    if (due.length > 0) {
+      setToast({
+        message: `⏰ ${due.length} reminder(s) due today!`,
+        type: "success",
+      });
+    }
+  }, [user]);
 
   const handleLogin = (userData) => {
     localStorage.setItem("ht_user", JSON.stringify(userData));
@@ -39,7 +56,13 @@ export default function App() {
     }
 
     if (page === "wishlist") return <Wishlist user={user} onBack={() => setPage("dashboard")} />;
-    if (page === "reminders") return <Reminders user={user} onBack={() => setPage("dashboard")} />;
+    if (page === "reminders") return (
+      <Reminders
+        user={user}
+        onBack={() => setPage("dashboard")}
+        showToast={(msg, type) => setToast({ message: msg, type })}
+      />
+    );
     if (page === "profile") return (
       <Profile
         user={user}
@@ -56,6 +79,13 @@ export default function App() {
     <div className="app">
       {user && <Navbar user={user} onLogout={handleLogout} setPage={setPage} />}
       {renderPage()}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

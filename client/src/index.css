@@ -18,3 +18,77 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* ---- DARK MODE ---- */
+body.dark {
+  background: #0f0f0f;
+  color: #f1f5f9;
+}
+
+body.dark .stat-card {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+body.dark .job-card {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+body.dark .job-title { color: #f1f5f9; }
+body.dark .job-company { color: #a78bfa; }
+body.dark .job-notes {
+  background: #12122a;
+  border-left-color: #a78bfa;
+  color: #cbd5e1;
+}
+
+body.dark .filter-search,
+body.dark .filter-select {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+  color: #f1f5f9;
+}
+
+body.dark .modal {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+}
+
+body.dark .modal h2 { color: #f1f5f9; }
+
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea {
+  background: #12122a;
+  border-color: #2a2a3e;
+  color: #f1f5f9;
+}
+
+body.dark .form-group label { color: #94a3b8; }
+
+body.dark .btn-cancel {
+  background: #12122a;
+  color: #94a3b8;
+  border-color: #2a2a3e;
+}
+
+body.dark .btn-edit {
+  background: #12122a;
+  color: #94a3b8;
+  border-color: #2a2a3e;
+}
+
+body.dark .auth-page { background: #0f0f0f; }
+
+body.dark .auth-card {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+body.dark .auth-card h2 { color: #f1f5f9; }
+body.dark .auth-card p { color: #94a3b8; }
+body.dark .dashboard-header h1 { color: #f1f5f9; }
+body.dark .empty-state h3 { color: #94a3b8; }
+body.dark .job-date { color: #64748b; }
+body.dark .job-meta { color: #64748b; }
