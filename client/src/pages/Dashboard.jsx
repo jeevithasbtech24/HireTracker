@@ -18,6 +18,8 @@ const BADGE_CLASS = {
 
 const PIE_COLORS = ["#60a5fa", "#fbbf24", "#34d399", "#f87171", "#a78bfa"];
 
+const GEMINI_API_KEY = "AIzaSyC8_iOaMv0fjtdeTsziq-u5dPFqBTESDAI";
+
 export default function Dashboard({ user }) {
   const storageKey = `ht_jobs_${user.email}`;
 
@@ -29,6 +31,8 @@ export default function Dashboard({ user }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [sortBy, setSortBy] = useState("newest");
+  const [generatingCoverLetter, setGeneratingCoverLetter] = useState(null);
+  const [generatingEmailDraft, setGeneratingEmailDraft] = useState(null);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(jobs));
@@ -44,25 +48,203 @@ export default function Dashboard({ user }) {
       setJobs(jobs.filter((j) => j.id !== id));
   };
 
+  const handleGenerateCoverLetter = async (job) => {
+    const storedUser = JSON.parse(localStorage.getItem("ht_user") || "{}");
+    const bio = storedUser.bio || "";
+    const userName = storedUser.name || "Applicant";
+
+    if (!bio) {
+      alert("Please add your bio in Profile → About Me first! It helps generate a better cover letter.");
+      return;
+    }
+
+    setGeneratingCoverLetter(job.id);
+
+    try {
+      const prompt = `Write a professional cover letter for the following job application:
+
+Job Title: ${job.title}
+Company: ${job.company}
+${job.location ? `Location: ${job.location}` : ""}
+${job.salary ? `Salary: ${job.salary}` : ""}
+${job.notes ? `Additional Notes: ${job.notes}` : ""}
+
+Applicant Name: ${userName}
+About the Applicant: ${bio}
+
+Instructions:
+- Write 3 clear paragraphs
+- Start directly with "Dear Hiring Manager,"
+- Paragraph 1: Express interest in the role and company
+- Paragraph 2: Highlight relevant skills and experience from the bio
+- Paragraph 3: Close with enthusiasm and call to action
+- End with: "Sincerely,\n${userName}"
+- Do NOT include placeholders like [Your Address] or [Date]
+- Keep it under 300 words, professional and confident`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error.message || "Gemini API error");
+      }
+
+      const letterText =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "Could not generate cover letter.";
+
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.setTextColor(15, 15, 15);
+      doc.setFont("helvetica", "bold");
+      doc.text("Cover Letter", 14, 20);
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${job.title} at ${job.company}`, 14, 30);
+      doc.text(
+        `Prepared by: ${userName}  |  ${new Date().toLocaleDateString("en-GB")}`,
+        14, 38
+      );
+
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 43, 196, 43);
+
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(letterText, 178);
+      doc.text(lines, 14, 54);
+
+      const fileName = `CoverLetter_${job.company}_${job.title}`
+        .replace(/[^a-zA-Z0-9_]/g, "_")
+        .replace(/_+/g, "_");
+
+      doc.save(`${fileName}.pdf`);
+
+    } catch (err) {
+      console.error("Cover letter error:", err);
+      alert(`Failed to generate cover letter.\n\nError: ${err.message}`);
+    } finally {
+      setGeneratingCoverLetter(null);
+    }
+  };
+
+  const handleGenerateEmailDraft = async (job) => {
+    const storedUser = JSON.parse(localStorage.getItem("ht_user") || "{}");
+    const userName = storedUser.name || "Applicant";
+    const bio = storedUser.bio || "";
+
+    setGeneratingEmailDraft(job.id);
+
+    try {
+      const prompt = `Write a short professional follow-up email to a recruiter for the following job:
+
+Job Title: ${job.title}
+Company: ${job.company}
+${job.location ? `Location: ${job.location}` : ""}
+Applicant Name: ${userName}
+${bio ? `About the Applicant: ${bio}` : ""}
+
+Instructions:
+- First line must be: Subject: Following Up – ${job.title} Application at ${job.company}
+- Then write the email body
+- Keep it under 150 words
+- Professional, confident, and polite tone
+- End with applicant name: ${userName}
+- Do NOT include placeholders like [Your Phone] or [Date]`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error.message || "Gemini API error");
+      }
+
+      const emailText =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "Could not generate email draft.";
+
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 15, 15);
+      doc.text("Email Draft", 14, 20);
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${job.title} at ${job.company}`, 14, 30);
+      doc.text(
+        `Prepared by: ${userName}  |  ${new Date().toLocaleDateString("en-GB")}`,
+        14, 38
+      );
+
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 43, 196, 43);
+
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(emailText, 178);
+      doc.text(lines, 14, 54);
+
+      const fileName = `EmailDraft_${job.company}_${job.title}`
+        .replace(/[^a-zA-Z0-9_]/g, "_")
+        .replace(/_+/g, "_");
+
+      doc.save(`${fileName}.pdf`);
+
+    } catch (err) {
+      console.error("Email draft error:", err);
+      alert(`Failed to generate email draft.\n\nError: ${err.message}`);
+    } finally {
+      setGeneratingEmailDraft(null);
+    }
+  };
+
+  const stats = {
+    total: jobs.length,
+    applied: jobs.filter((j) => j.status === "Applied").length,
+    interview: jobs.filter((j) => j.status === "Interview").length,
+    offer: jobs.filter((j) => j.status === "Offer").length,
+    rejected: jobs.filter((j) => j.status === "Rejected").length,
+  };
+
   const handleExportPDF = () => {
     const doc = new jsPDF();
-
-    // Title
     doc.setFontSize(20);
     doc.setTextColor(40, 40, 40);
     doc.text("HireTracker - My Job Applications", 14, 20);
-
-    // Subtitle
     doc.setFontSize(11);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on ${new Date().toLocaleDateString("en-IN")} | ${user.name}`, 14, 30);
-
-    // Stats summary
+    doc.text(`Generated on ${new Date().toLocaleDateString("en-GB")} | ${user.name}`, 14, 30);
     doc.setFontSize(12);
     doc.setTextColor(40, 40, 40);
     doc.text(`Total: ${stats.total}  |  Applied: ${stats.applied}  |  Interviews: ${stats.interview}  |  Offers: ${stats.offer}  |  Rejected: ${stats.rejected}`, 14, 42);
-
-    // Table
     autoTable(doc, {
       startY: 50,
       head: [["Job Title", "Company", "Location", "Salary", "Status", "Date"]],
@@ -72,22 +254,12 @@ export default function Dashboard({ user }) {
         j.location || "-",
         j.salary || "-",
         j.status || "-",
-        new Date(j.date).toLocaleDateString("en-IN"),
+        new Date(j.date).toLocaleDateString("en-GB"),
       ]),
-      headStyles: {
-        fillColor: [15, 15, 15],
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 250],
-      },
-      styles: {
-        fontSize: 10,
-        cellPadding: 4,
-      },
+      headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 245, 250] },
+      styles: { fontSize: 10, cellPadding: 4 },
     });
-
     doc.save("HireTracker_Applications.pdf");
   };
 
@@ -106,14 +278,6 @@ export default function Dashboard({ user }) {
       return 0;
     });
 
-  const stats = {
-    total: jobs.length,
-    applied: jobs.filter((j) => j.status === "Applied").length,
-    interview: jobs.filter((j) => j.status === "Interview").length,
-    offer: jobs.filter((j) => j.status === "Offer").length,
-    rejected: jobs.filter((j) => j.status === "Rejected").length,
-  };
-
   const pieData = [
     { name: "Applied", value: stats.applied },
     { name: "Interview", value: stats.interview },
@@ -124,15 +288,14 @@ export default function Dashboard({ user }) {
 
   const monthMap = {};
   jobs.forEach((j) => {
-    const month = new Date(j.date).toLocaleDateString("en-IN", {
-      month: "short", year: "2-digit",
-    });
+    const d = new Date(j.date);
+    const month = d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
     monthMap[month] = (monthMap[month] || 0) + 1;
   });
   const barData = Object.entries(monthMap).map(([month, count]) => ({ month, count }));
 
   const formatDate = (iso) =>
-    new Date(iso).toLocaleDateString("en-IN", {
+    new Date(iso).toLocaleDateString("en-GB", {
       day: "numeric", month: "short", year: "numeric",
     });
 
@@ -174,7 +337,7 @@ export default function Dashboard({ user }) {
                 e.target.style.color = "#a78bfa";
               }}
             >
-              📄 Export PDF
+              Export PDF
             </button>
           )}
           <button className="btn-add" onClick={() => setShowAdd(true)}>
@@ -217,7 +380,7 @@ export default function Dashboard({ user }) {
         }}>
           <div className="stat-card" style={{ padding: "1.5rem" }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "1rem", color: "inherit" }}>
-              📊 Application Breakdown
+              Application Breakdown
             </h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -234,7 +397,7 @@ export default function Dashboard({ user }) {
 
           <div className="stat-card" style={{ padding: "1.5rem" }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "1rem", color: "inherit" }}>
-              📅 Applications per Month
+              Applications per Month
             </h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={barData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
@@ -313,9 +476,47 @@ export default function Dashboard({ user }) {
                 {job.notes && <div className="job-notes">{job.notes}</div>}
                 <div className="job-date">Applied on {formatDate(job.date)}</div>
 
-                <div className="job-actions">
+                <div className="job-actions" style={{ flexWrap: "wrap", gap: "0.4rem" }}>
                   <button className="btn-edit" onClick={() => setEditJob(job)}>Edit</button>
                   <button className="btn-delete" onClick={() => handleDelete(job.id)}>Delete</button>
+                  <button
+                    onClick={() => handleGenerateCoverLetter(job)}
+                    disabled={generatingCoverLetter === job.id}
+                    style={{
+                      background: generatingCoverLetter === job.id ? "#5b21b6" : "#7c3aed",
+                      color: "white",
+                      border: "none",
+                      padding: "7px 13px",
+                      borderRadius: "7px",
+                      fontSize: "0.78rem",
+                      fontWeight: "600",
+                      cursor: generatingCoverLetter === job.id ? "not-allowed" : "pointer",
+                      opacity: generatingCoverLetter === job.id ? 0.75 : 1,
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {generatingCoverLetter === job.id ? "⏳ Generating..." : "✉️ Cover Letter"}
+                  </button>
+                  <button
+                    onClick={() => handleGenerateEmailDraft(job)}
+                    disabled={generatingEmailDraft === job.id}
+                    style={{
+                      background: generatingEmailDraft === job.id ? "#065f46" : "#059669",
+                      color: "white",
+                      border: "none",
+                      padding: "7px 13px",
+                      borderRadius: "7px",
+                      fontSize: "0.78rem",
+                      fontWeight: "600",
+                      cursor: generatingEmailDraft === job.id ? "not-allowed" : "pointer",
+                      opacity: generatingEmailDraft === job.id ? 0.75 : 1,
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {generatingEmailDraft === job.id ? "⏳ Generating..." : "📧 Email Draft"}
+                  </button>
                 </div>
               </div>
             );

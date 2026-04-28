@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-
+ 
 export default function Navbar({ user, onLogout, setPage }) {
   const [dark, setDark] = useState(() => {
     return localStorage.getItem("ht_theme") === "dark";
   });
-
+ 
   useEffect(() => {
     if (dark) {
       document.body.classList.add("dark");
@@ -14,7 +14,7 @@ export default function Navbar({ user, onLogout, setPage }) {
       localStorage.setItem("ht_theme", "light");
     }
   }, [dark]);
-
+ 
   return (
     <nav className="navbar">
       <div className="navbar-brand">
@@ -29,6 +29,9 @@ export default function Navbar({ user, onLogout, setPage }) {
         </button>
         <button className="btn-nav" onClick={() => setPage("reminders")}>
           Reminders
+        </button>
+        <button className="btn-nav" onClick={() => setPage("resume-score")}>
+          Resume Score
         </button>
         <button className="btn-nav" onClick={() => setPage("profile")}>
           Profile

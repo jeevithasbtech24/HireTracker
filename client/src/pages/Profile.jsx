@@ -9,6 +9,14 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
   const [msg, setMsg] = useState(null);
   const [msgType, setMsgType] = useState("success");
 
+  // Bio state
+  const [bio, setBio] = useState(() => {
+    const stored = JSON.parse(localStorage.getItem("ht_user") || "{}");
+    return stored.bio || "";
+  });
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioInput, setBioInput] = useState(bio);
+
   const showMsg = (text, type = "success") => {
     setMsg(text);
     setMsgType(type);
@@ -40,6 +48,15 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
     onUpdateUser(updated);
     setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     showMsg("Password changed!");
+  };
+
+  const handleSaveBio = () => {
+    const updated = { ...user, bio: bioInput.trim() };
+    localStorage.setItem("ht_user", JSON.stringify(updated));
+    onUpdateUser(updated);
+    setBio(bioInput.trim());
+    setEditingBio(false);
+    showMsg("Bio saved!");
   };
 
   const handleDeleteAccount = () => {
@@ -178,7 +195,65 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
         </div>
       </div>
 
-      {/* Section 3 — Danger Zone */}
+      {/* Section 3 — About Me / Bio */}
+      <div style={{
+        background: "white", borderRadius: "14px",
+        border: "1px solid #e4e4e7", marginBottom: "16px", overflow: "hidden"
+      }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid #f4f4f5" }}>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#a1a1aa", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            About Me
+          </span>
+          <div style={{ fontSize: "11px", color: "#c4c4cc", marginTop: "2px" }}>
+            Used to generate personalized cover letters
+          </div>
+        </div>
+        <div style={{ padding: "20px" }}>
+          {editingBio ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <textarea
+                value={bioInput}
+                onChange={(e) => setBioInput(e.target.value)}
+                rows={5}
+                placeholder="Write about yourself: your skills, experience, what kind of roles you're looking for, key achievements..."
+                style={{
+                  width: "100%", padding: "10px 14px", borderRadius: "8px",
+                  border: "1.5px solid #e4e4e7", fontSize: "14px",
+                  fontFamily: "inherit", resize: "vertical",
+                  boxSizing: "border-box", color: "#0f0f0f",
+                  background: "#fafafa", lineHeight: "1.6",
+                }}
+              />
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button className="btn-save" style={{ padding: "9px 18px" }} onClick={handleSaveBio}>
+                  Save Bio
+                </button>
+                <button className="btn-cancel" onClick={() => { setEditingBio(false); setBioInput(bio); }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+              <p style={{
+                fontSize: "14px", color: bio ? "#0f0f0f" : "#a1a1aa",
+                margin: 0, lineHeight: "1.7", flex: 1,
+              }}>
+                {bio || "No bio yet. Add one to generate better, personalized cover letters!"}
+              </p>
+              <button
+                className="btn-edit"
+                style={{ flexShrink: 0 }}
+                onClick={() => { setEditingBio(true); setBioInput(bio); }}
+              >
+                {bio ? "Edit" : "Add"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Section 4 — Danger Zone */}
       <div style={{
         background: "white", borderRadius: "14px",
         border: "1px solid #fecaca", marginBottom: "40px", overflow: "hidden"
