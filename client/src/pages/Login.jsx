@@ -16,7 +16,6 @@ export default function Login({ onLogin, setPage }) {
         setError(data.error);
         return;
       }
-      // Save token + user info to localStorage
       localStorage.setItem("ht_user", JSON.stringify({
         id: data.user.id,
         name: data.user.name,

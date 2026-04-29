@@ -64,3 +64,21 @@ export const deleteJob = async (id) => {
   });
   return res.json();
 };
+
+export const changePassword = async (currentPassword, newPassword) => {
+  const res = await fetch(`${BASE_URL}/auth/change-password`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  return res.json();
+};
+
+export const updateName = async (name) => {
+  const res = await fetch(`${BASE_URL}/auth/update-name`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  return res.json();
+};

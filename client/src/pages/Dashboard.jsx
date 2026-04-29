@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getJobs, addJob, updateJob, deleteJob } from "../services/api";
 
 const BADGE_CLASS = {
   Applied: "badge-applied",
@@ -21,11 +22,8 @@ const PIE_COLORS = ["#60a5fa", "#fbbf24", "#34d399", "#f87171", "#a78bfa"];
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
 export default function Dashboard({ user }) {
-  const storageKey = `ht_jobs_${user.email}`;
-
-  const [jobs, setJobs] = useState(() => {
-    return JSON.parse(localStorage.getItem(storageKey) || "[]");
-  });
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editJob, setEditJob] = useState(null);
   const [search, setSearch] = useState("");
@@ -34,18 +32,50 @@ export default function Dashboard({ user }) {
   const [generatingCoverLetter, setGeneratingCoverLetter] = useState(null);
   const [generatingEmailDraft, setGeneratingEmailDraft] = useState(null);
 
+  // Load jobs from backend on mount
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(jobs));
-  }, [jobs, storageKey]);
+    const fetchJobs = async () => {
+      try {
+        const data = await getJobs();
+        if (Array.isArray(data)) {
+          setJobs(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch jobs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
 
-  const handleAdd = (job) => setJobs([job, ...jobs]);
+  const handleAdd = async (job) => {
+    try {
+      const newJob = await addJob(job);
+      setJobs([newJob, ...jobs]);
+    } catch (err) {
+      console.error("Failed to add job:", err);
+    }
+  };
 
-  const handleSave = (updated) =>
-    setJobs(jobs.map((j) => (j.id === updated.id ? updated : j)));
+  const handleSave = async (updated) => {
+    try {
+      const savedJob = await updateJob(updated._id, updated);
+      setJobs(jobs.map((j) => (j._id === savedJob._id ? savedJob : j)));
+    } catch (err) {
+      console.error("Failed to update job:", err);
+    }
+  };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this application?"))
-      setJobs(jobs.filter((j) => j.id !== id));
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete this application?")) {
+      try {
+        await deleteJob(id);
+        setJobs(jobs.filter((j) => j._id !== id));
+      } catch (err) {
+        console.error("Failed to delete job:", err);
+      }
+    }
   };
 
   const handleGenerateCoverLetter = async (job) => {
@@ -54,11 +84,11 @@ export default function Dashboard({ user }) {
     const userName = storedUser.name || "Applicant";
 
     if (!bio) {
-      alert("Please add your bio in Profile → About Me first! It helps generate a better cover letter.");
+      alert("Please add your bio in Profile → About Me first!");
       return;
     }
 
-    setGeneratingCoverLetter(job.id);
+    setGeneratingCoverLetter(job._id);
 
     try {
       const prompt = `Write a professional cover letter for the following job application:
@@ -94,48 +124,31 @@ Instructions:
       );
 
       const data = await response.json();
+      if (data.error) throw new Error(data.error.message || "Gemini API error");
 
-      if (data.error) {
-        throw new Error(data.error.message || "Gemini API error");
-      }
-
-      const letterText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Could not generate cover letter.";
+      const letterText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate cover letter.";
 
       const doc = new jsPDF();
-
       doc.setFontSize(18);
       doc.setTextColor(15, 15, 15);
       doc.setFont("helvetica", "bold");
       doc.text("Cover Letter", 14, 20);
-
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
       doc.text(`${job.title} at ${job.company}`, 14, 30);
-      doc.text(
-        `Prepared by: ${userName}  |  ${new Date().toLocaleDateString("en-GB")}`,
-        14, 38
-      );
-
+      doc.text(`Prepared by: ${userName}  |  ${new Date().toLocaleDateString("en-GB")}`, 14, 38);
       doc.setDrawColor(200, 200, 200);
       doc.line(14, 43, 196, 43);
-
       doc.setFontSize(12);
       doc.setTextColor(30, 30, 30);
       doc.setFont("helvetica", "normal");
       const lines = doc.splitTextToSize(letterText, 178);
       doc.text(lines, 14, 54);
-
-      const fileName = `CoverLetter_${job.company}_${job.title}`
-        .replace(/[^a-zA-Z0-9_]/g, "_")
-        .replace(/_+/g, "_");
-
+      const fileName = `CoverLetter_${job.company}_${job.title}`.replace(/[^a-zA-Z0-9_]/g, "_").replace(/_+/g, "_");
       doc.save(`${fileName}.pdf`);
 
     } catch (err) {
-      console.error("Cover letter error:", err);
       alert(`Failed to generate cover letter.\n\nError: ${err.message}`);
     } finally {
       setGeneratingCoverLetter(null);
@@ -147,7 +160,7 @@ Instructions:
     const userName = storedUser.name || "Applicant";
     const bio = storedUser.bio || "";
 
-    setGeneratingEmailDraft(job.id);
+    setGeneratingEmailDraft(job._id);
 
     try {
       const prompt = `Write a short professional follow-up email to a recruiter for the following job:
@@ -178,48 +191,31 @@ Instructions:
       );
 
       const data = await response.json();
+      if (data.error) throw new Error(data.error.message || "Gemini API error");
 
-      if (data.error) {
-        throw new Error(data.error.message || "Gemini API error");
-      }
-
-      const emailText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Could not generate email draft.";
+      const emailText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate email draft.";
 
       const doc = new jsPDF();
-
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 15, 15);
       doc.text("Email Draft", 14, 20);
-
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
       doc.text(`${job.title} at ${job.company}`, 14, 30);
-      doc.text(
-        `Prepared by: ${userName}  |  ${new Date().toLocaleDateString("en-GB")}`,
-        14, 38
-      );
-
+      doc.text(`Prepared by: ${userName}  |  ${new Date().toLocaleDateString("en-GB")}`, 14, 38);
       doc.setDrawColor(200, 200, 200);
       doc.line(14, 43, 196, 43);
-
       doc.setFontSize(12);
       doc.setTextColor(30, 30, 30);
       doc.setFont("helvetica", "normal");
       const lines = doc.splitTextToSize(emailText, 178);
       doc.text(lines, 14, 54);
-
-      const fileName = `EmailDraft_${job.company}_${job.title}`
-        .replace(/[^a-zA-Z0-9_]/g, "_")
-        .replace(/_+/g, "_");
-
+      const fileName = `EmailDraft_${job.company}_${job.title}`.replace(/[^a-zA-Z0-9_]/g, "_").replace(/_+/g, "_");
       doc.save(`${fileName}.pdf`);
 
     } catch (err) {
-      console.error("Email draft error:", err);
       alert(`Failed to generate email draft.\n\nError: ${err.message}`);
     } finally {
       setGeneratingEmailDraft(null);
@@ -254,7 +250,7 @@ Instructions:
         j.location || "-",
         j.salary || "-",
         j.status || "-",
-        new Date(j.date).toLocaleDateString("en-GB"),
+        new Date(j.appliedAt || j.createdAt).toLocaleDateString("en-GB"),
       ]),
       headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [245, 245, 250] },
@@ -272,8 +268,8 @@ Instructions:
       return matchSearch && matchStatus;
     })
     .sort((a, b) => {
-      if (sortBy === "newest") return new Date(b.date) - new Date(a.date);
-      if (sortBy === "oldest") return new Date(a.date) - new Date(b.date);
+      if (sortBy === "newest") return new Date(b.appliedAt || b.createdAt) - new Date(a.appliedAt || a.createdAt);
+      if (sortBy === "oldest") return new Date(a.appliedAt || a.createdAt) - new Date(b.appliedAt || b.createdAt);
       if (sortBy === "company") return a.company.localeCompare(b.company);
       return 0;
     });
@@ -288,7 +284,7 @@ Instructions:
 
   const monthMap = {};
   jobs.forEach((j) => {
-    const d = new Date(j.date);
+    const d = new Date(j.appliedAt || j.createdAt);
     const month = d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
     monthMap[month] = (monthMap[month] || 0) + 1;
   });
@@ -300,14 +296,24 @@ Instructions:
     });
 
   const getCountdown = (job) => {
-    if (job.status !== "Interview" || !job.date) return null;
+    if (job.status !== "Interview" || !job.appliedAt) return null;
     const diff = Math.ceil(
-      (new Date(job.date) - new Date()) / (1000 * 60 * 60 * 24)
+      (new Date(job.appliedAt) - new Date()) / (1000 * 60 * 60 * 24)
     );
     if (diff === 0) return "Interview is Today!";
     if (diff > 0) return `Interview in ${diff} day(s)`;
     return null;
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <div className="empty-state">
+          <h3>Loading your applications...</h3>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -444,7 +450,7 @@ Instructions:
           {filtered.map((job) => {
             const countdown = getCountdown(job);
             return (
-              <div className="job-card" key={job.id}>
+              <div className="job-card" key={job._id}>
                 <div className="job-card-header">
                   <div>
                     <div className="job-title">{job.title}</div>
@@ -474,48 +480,38 @@ Instructions:
                 </div>
 
                 {job.notes && <div className="job-notes">{job.notes}</div>}
-                <div className="job-date">Applied on {formatDate(job.date)}</div>
+                <div className="job-date">Applied on {formatDate(job.appliedAt || job.createdAt)}</div>
 
                 <div className="job-actions" style={{ flexWrap: "wrap", gap: "0.4rem" }}>
                   <button className="btn-edit" onClick={() => setEditJob(job)}>Edit</button>
-                  <button className="btn-delete" onClick={() => handleDelete(job.id)}>Delete</button>
+                  <button className="btn-delete" onClick={() => handleDelete(job._id)}>Delete</button>
                   <button
                     onClick={() => handleGenerateCoverLetter(job)}
-                    disabled={generatingCoverLetter === job.id}
+                    disabled={generatingCoverLetter === job._id}
                     style={{
-                      background: generatingCoverLetter === job.id ? "#5b21b6" : "#7c3aed",
-                      color: "white",
-                      border: "none",
-                      padding: "7px 13px",
-                      borderRadius: "7px",
-                      fontSize: "0.78rem",
-                      fontWeight: "600",
-                      cursor: generatingCoverLetter === job.id ? "not-allowed" : "pointer",
-                      opacity: generatingCoverLetter === job.id ? 0.75 : 1,
-                      transition: "all 0.2s",
-                      whiteSpace: "nowrap",
+                      background: generatingCoverLetter === job._id ? "#5b21b6" : "#7c3aed",
+                      color: "white", border: "none", padding: "7px 13px",
+                      borderRadius: "7px", fontSize: "0.78rem", fontWeight: "600",
+                      cursor: generatingCoverLetter === job._id ? "not-allowed" : "pointer",
+                      opacity: generatingCoverLetter === job._id ? 0.75 : 1,
+                      transition: "all 0.2s", whiteSpace: "nowrap",
                     }}
                   >
-                    {generatingCoverLetter === job.id ? "⏳ Generating..." : "✉️ Cover Letter"}
+                    {generatingCoverLetter === job._id ? "⏳ Generating..." : "✉️ Cover Letter"}
                   </button>
                   <button
                     onClick={() => handleGenerateEmailDraft(job)}
-                    disabled={generatingEmailDraft === job.id}
+                    disabled={generatingEmailDraft === job._id}
                     style={{
-                      background: generatingEmailDraft === job.id ? "#065f46" : "#059669",
-                      color: "white",
-                      border: "none",
-                      padding: "7px 13px",
-                      borderRadius: "7px",
-                      fontSize: "0.78rem",
-                      fontWeight: "600",
-                      cursor: generatingEmailDraft === job.id ? "not-allowed" : "pointer",
-                      opacity: generatingEmailDraft === job.id ? 0.75 : 1,
-                      transition: "all 0.2s",
-                      whiteSpace: "nowrap",
+                      background: generatingEmailDraft === job._id ? "#065f46" : "#059669",
+                      color: "white", border: "none", padding: "7px 13px",
+                      borderRadius: "7px", fontSize: "0.78rem", fontWeight: "600",
+                      cursor: generatingEmailDraft === job._id ? "not-allowed" : "pointer",
+                      opacity: generatingEmailDraft === job._id ? 0.75 : 1,
+                      transition: "all 0.2s", whiteSpace: "nowrap",
                     }}
                   >
-                    {generatingEmailDraft === job.id ? "⏳ Generating..." : "📧 Email Draft"}
+                    {generatingEmailDraft === job._id ? "⏳ Generating..." : "📧 Email Draft"}
                   </button>
                 </div>
               </div>

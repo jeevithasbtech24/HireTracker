@@ -21,14 +21,12 @@ export default function Register({ onLogin, setPage }) {
 
     setLoading(true);
     try {
-      // Register user
       const registerData = await registerUser(form.name, form.email, form.password);
       if (registerData.error) {
         setError(registerData.error);
         return;
       }
 
-      // Auto login after register
       const loginData = await loginUser(form.email, form.password);
       if (loginData.error) {
         setError(loginData.error);

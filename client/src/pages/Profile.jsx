@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { changePassword, updateName } from "../services/api";
 
 export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack }) {
   const [editing, setEditing] = useState(false);
@@ -9,7 +10,6 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
   const [msg, setMsg] = useState(null);
   const [msgType, setMsgType] = useState("success");
 
-  // Bio state
   const [bio, setBio] = useState(() => {
     const stored = JSON.parse(localStorage.getItem("ht_user") || "{}");
     return stored.bio || "";
@@ -26,8 +26,10 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
   const getInitials = (name) =>
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     if (!name.trim()) return showMsg("Name can't be empty!", "error");
+    const data = await updateName(name.trim());
+    if (data.error) return showMsg(data.error, "error");
     const updated = { ...user, name: name.trim() };
     localStorage.setItem("ht_user", JSON.stringify(updated));
     onUpdateUser(updated);
@@ -35,17 +37,11 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
     showMsg("Name updated!");
   };
 
-  const handleChangePassword = () => {
-    const stored = JSON.parse(localStorage.getItem("ht_user"));
-    if (currentPassword !== stored.password)
-      return showMsg("Current password is wrong!", "error");
-    if (newPassword.length < 6)
-      return showMsg("New password must be 6+ characters!", "error");
-    if (newPassword !== confirmPassword)
-      return showMsg("Passwords don't match!", "error");
-    const updated = { ...user, password: newPassword };
-    localStorage.setItem("ht_user", JSON.stringify(updated));
-    onUpdateUser(updated);
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) return showMsg("New password must be 6+ characters!", "error");
+    if (newPassword !== confirmPassword) return showMsg("Passwords don't match!", "error");
+    const data = await changePassword(currentPassword, newPassword);
+    if (data.error) return showMsg(data.error, "error");
     setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     showMsg("Password changed!");
   };
@@ -74,7 +70,6 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
   return (
     <div style={{ maxWidth: "560px", margin: "40px auto", padding: "0 20px" }}>
 
-      {/* Toast */}
       {msg && (
         <div style={{
           position: "fixed", bottom: "28px", right: "28px",
@@ -88,7 +83,6 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
         </div>
       )}
 
-      {/* Page Title */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
         <h1 style={{ fontSize: "22px", fontWeight: "800", color: "#0f0f0f", margin: 0 }}>
           Account Settings
@@ -107,7 +101,6 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
           </span>
         </div>
 
-        {/* Avatar Row */}
         <div style={{ padding: "20px", display: "flex", alignItems: "center", gap: "18px", borderBottom: "1px solid #f4f4f5" }}>
           <div style={{
             width: "52px", height: "52px", borderRadius: "50%",
@@ -123,7 +116,6 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
           </div>
         </div>
 
-        {/* Edit Name Row */}
         <div style={{ padding: "20px" }}>
           <div style={{ fontSize: "13px", fontWeight: "600", color: "#3f3f46", marginBottom: "10px" }}>
             Display Name
@@ -215,7 +207,7 @@ export default function Profile({ user, onUpdateUser, onDeleteAccount, onBack })
                 value={bioInput}
                 onChange={(e) => setBioInput(e.target.value)}
                 rows={5}
-                placeholder="Write about yourself: your skills, experience, what kind of roles you're looking for, key achievements..."
+                placeholder="Write about yourself: your skills, experience, what kind of roles you're looking for..."
                 style={{
                   width: "100%", padding: "10px 14px", borderRadius: "8px",
                   border: "1.5px solid #e4e4e7", fontSize: "14px",
