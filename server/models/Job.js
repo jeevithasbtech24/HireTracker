@@ -6,7 +6,7 @@ const JobSchema = new mongoose.Schema({
   company:  { type: String, required: true },
   location: String,
   salary:   String,
-  status:   { type: String, enum: ['saved','applied','interview','offer','rejected'], default: 'saved' },
+  status:   { type: String, enum: ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'], default: 'Saved' },
   notes:    String,
   appliedAt:{ type: Date, default: Date.now }
 }, { timestamps: true })
