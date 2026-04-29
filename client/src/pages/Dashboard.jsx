@@ -18,7 +18,7 @@ const BADGE_CLASS = {
 
 const PIE_COLORS = ["#60a5fa", "#fbbf24", "#34d399", "#f87171", "#a78bfa"];
 
-const GEMINI_API_KEY = "AIzaSyC8_iOaMv0fjtdeTsziq-u5dPFqBTESDAI";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
 export default function Dashboard({ user }) {
   const storageKey = `ht_jobs_${user.email}`;

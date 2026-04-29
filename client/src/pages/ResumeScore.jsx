@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const GEMINI_API_KEY = "AIzaSyC8_iOaMv0fjtdeTsziq-u5dPFqBTESDAI";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
 export default function ResumeScore({ user, onBack }) {
   const [file, setFile] = useState(null);
