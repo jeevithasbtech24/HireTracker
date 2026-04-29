@@ -1,20 +1,39 @@
 import { useState } from "react";
+import { loginUser } from "../services/api";
 
 export default function Login({ onLogin, setPage }) {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem("ht_users") || "[]");
-    const found = users.find(
-      (u) => u.email === form.email && u.password === form.password
-    );
-    if (!found) {
-      setError("Invalid email or password.");
-      return;
+    setError("");
+    setLoading(true);
+    try {
+      const data = await loginUser(form.email, form.password);
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+      // Save token + user info to localStorage
+      localStorage.setItem("ht_user", JSON.stringify({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        token: data.token,
+      }));
+      onLogin({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        token: data.token,
+      });
+    } catch (err) {
+      setError("Something went wrong. Make sure the server is running.");
+    } finally {
+      setLoading(false);
     }
-    onLogin({ name: found.name, email: found.email });
   };
 
   return (
@@ -44,8 +63,8 @@ export default function Login({ onLogin, setPage }) {
               required
             />
           </div>
-          <button type="submit" className="btn-primary">
-            Login
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
         <div className="auth-switch">

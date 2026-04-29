@@ -1,11 +1,15 @@
 import { useState } from "react";
+import { registerUser, loginUser } from "../services/api";
 
 export default function Register({ onLogin, setPage }) {
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     if (form.password !== form.confirm) {
       setError("Passwords don't match.");
       return;
@@ -14,14 +18,42 @@ export default function Register({ onLogin, setPage }) {
       setError("Password must be at least 6 characters.");
       return;
     }
-    const users = JSON.parse(localStorage.getItem("ht_users") || "[]");
-    if (users.find((u) => u.email === form.email)) {
-      setError("Email already registered.");
-      return;
+
+    setLoading(true);
+    try {
+      // Register user
+      const registerData = await registerUser(form.name, form.email, form.password);
+      if (registerData.error) {
+        setError(registerData.error);
+        return;
+      }
+
+      // Auto login after register
+      const loginData = await loginUser(form.email, form.password);
+      if (loginData.error) {
+        setError(loginData.error);
+        return;
+      }
+
+      localStorage.setItem("ht_user", JSON.stringify({
+        id: loginData.user.id,
+        name: loginData.user.name,
+        email: loginData.user.email,
+        token: loginData.token,
+      }));
+
+      onLogin({
+        id: loginData.user.id,
+        name: loginData.user.name,
+        email: loginData.user.email,
+        token: loginData.token,
+      });
+
+    } catch (err) {
+      setError("Something went wrong. Make sure the server is running.");
+    } finally {
+      setLoading(false);
     }
-    users.push({ name: form.name, email: form.email, password: form.password });
-    localStorage.setItem("ht_users", JSON.stringify(users));
-    onLogin({ name: form.name, email: form.email });
   };
 
   return (
@@ -71,8 +103,8 @@ export default function Register({ onLogin, setPage }) {
               required
             />
           </div>
-          <button type="submit" className="btn-primary">
-            Create Account
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
         <div className="auth-switch">
