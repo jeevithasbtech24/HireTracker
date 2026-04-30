@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
 :root {
-  --brand:        #6366f1;
+  --brand:        #a4a5df;
   --brand-dark:   #4f46e5;
   --brand-light:  #e0e7ff;
   --accent:       #06b6d4;
@@ -566,7 +566,7 @@ a:hover { text-decoration: underline; }
 }
 
 .badge-applied   { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-.badge-interview { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-interview { background: #fef3c7; color: #3e95ab; border: 1px solid #fde68a; }
 .badge-offer     { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .badge-rejected  { background: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3; }
 .badge-saved     { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }

@@ -17,7 +17,7 @@ const BADGE_CLASS = {
   Saved: "badge-saved",
 };
 
-const PIE_COLORS = ["#60a5fa", "#fbbf24", "#34d399", "#f87171", "#a78bfa"];
+const PIE_COLORS = ["#3c48a4", "#888dc9", "#809be6", "#8f8fdd", "#c0abff"];
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
@@ -319,7 +319,7 @@ Instructions:
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>My Applications</h1>
+        <h1 style={{ color: '#60A5FA' }}>My Applications</h1>
         <div style={{ display: "flex", gap: "0.7rem" }}>
           {jobs.length > 0 && (
             <button
@@ -353,31 +353,30 @@ Instructions:
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-num">{stats.total}</div>
-          <div className="stat-label">Total</div>
-        </div>
-        <div className="stat-card blue">
-          <div className="stat-num">{stats.applied}</div>
-          <div className="stat-label">Applied</div>
-        </div>
-        <div className="stat-card amber">
-          <div className="stat-num">{stats.interview}</div>
-          <div className="stat-label">Interviews</div>
-        </div>
-        <div className="stat-card green">
-          <div className="stat-num">{stats.offer}</div>
-          <div className="stat-label">Offers</div>
-        </div>
-        <div className="stat-card red">
-          <div className="stat-num">{stats.rejected}</div>
-          <div className="stat-label">Rejected</div>
-        </div>
-      </div>
+    <div className="stats-grid">
+  <div className="stat-card" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.total}</div>
+    <div className="stat-label">Total</div>
+  </div>
+  <div className="stat-card blue" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.applied}</div>
+    <div className="stat-label">Applied</div>
+  </div>
+  <div className="stat-card amber" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.interview}</div>
+    <div className="stat-label">Interviews</div>
+  </div>
+  <div className="stat-card green" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.offer}</div>
+    <div className="stat-label">Offers</div>
+  </div>
+  <div className="stat-card red" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.rejected}</div>
+    <div className="stat-label">Rejected</div>
+  </div>
+</div>
 
-      {/* Charts */}
+     {/* Charts */}
       {jobs.length > 0 && (
         <div style={{
           display: "grid",
@@ -385,7 +384,7 @@ Instructions:
           gap: "1rem",
           marginBottom: "1.8rem",
         }}>
-          <div className="stat-card" style={{ padding: "1.5rem" }}>
+          <div className="stat-card" style={{ padding: "1.5rem", background: "#fdf2f8" }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "1rem", color: "inherit" }}>
               Application Breakdown
             </h3>
@@ -402,7 +401,7 @@ Instructions:
             </ResponsiveContainer>
           </div>
 
-          <div className="stat-card" style={{ padding: "1.5rem" }}>
+          <div className="stat-card" style={{ padding: "1.5rem", background: "#fdf2f8" }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "1rem", color: "inherit" }}>
               Applications per Month
             </h3>
@@ -439,8 +438,7 @@ Instructions:
           <option value="company">Company A-Z</option>
         </select>
       </div>
-
-      {/* Job Cards */}
+     {/* Job Cards */}
       {filtered.length === 0 ? (
         <div className="empty-state">
           <h3>No applications found</h3>
@@ -451,7 +449,7 @@ Instructions:
           {filtered.map((job) => {
             const countdown = getCountdown(job);
             return (
-              <div className="job-card" key={job._id}>
+              <div className="job-card" key={job._id} style={{ background: "#fdf2f8" }}>
                 <div className="job-card-header">
                   <div>
                     <div className="job-title">{job.title}</div>
@@ -465,8 +463,8 @@ Instructions:
                 {countdown && (
                   <div style={{
                     fontSize: "0.8rem", fontWeight: "700",
-                    color: "#fbbf24", marginBottom: "8px",
-                    background: "rgba(251,191,36,0.1)",
+                    color: "#a4ccf4", marginBottom: "8px",
+                    background: "rgba(213, 225, 254, 0.1)",
                     padding: "4px 10px", borderRadius: "6px",
                     display: "inline-block",
                   }}>
@@ -484,14 +482,14 @@ Instructions:
                 <div className="job-date">Applied on {formatDate(job.appliedAt || job.createdAt)}</div>
 
                 <div className="job-actions" style={{ flexWrap: "wrap", gap: "0.4rem" }}>
-                  <button className="btn-edit" onClick={() => setEditJob(job)}>Edit</button>
-                  <button className="btn-delete" onClick={() => handleDelete(job._id)}>Delete</button>
+                  <button className="btn-edit" onClick={() => setEditJob(job)} style={{ background: "#dbeafe", color: "#3b82f6", border: "1px solid #bfdbfe" }}>Edit</button>
+                  <button className="btn-delete" onClick={() => handleDelete(job._id)} style={{ background: "#dbeafe", color: "#3b82f6", border: "1px solid #bfdbfe" }}>Delete</button>
                   <button
                     onClick={() => handleGenerateCoverLetter(job)}
                     disabled={generatingCoverLetter === job._id}
                     style={{
-                      background: generatingCoverLetter === job._id ? "#5b21b6" : "#7c3aed",
-                      color: "white", border: "none", padding: "7px 13px",
+                      background: generatingCoverLetter === job._id ? "#93c5fd" : "#dbeafe",
+                      color: "#3b82f6", border: "1px solid #bfdbfe", padding: "7px 13px",
                       borderRadius: "7px", fontSize: "0.78rem", fontWeight: "600",
                       cursor: generatingCoverLetter === job._id ? "not-allowed" : "pointer",
                       opacity: generatingCoverLetter === job._id ? 0.75 : 1,
@@ -504,8 +502,8 @@ Instructions:
                     onClick={() => handleGenerateEmailDraft(job)}
                     disabled={generatingEmailDraft === job._id}
                     style={{
-                      background: generatingEmailDraft === job._id ? "#065f46" : "#059669",
-                      color: "white", border: "none", padding: "7px 13px",
+                      background: generatingEmailDraft === job._id ? "#93c5fd" : "#dbeafe",
+                      color: "#3b82f6", border: "1px solid #bfdbfe", padding: "7px 13px",
                       borderRadius: "7px", fontSize: "0.78rem", fontWeight: "600",
                       cursor: generatingEmailDraft === job._id ? "not-allowed" : "pointer",
                       opacity: generatingEmailDraft === job._id ? 0.75 : 1,
