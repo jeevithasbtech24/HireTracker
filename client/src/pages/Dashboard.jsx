@@ -475,8 +475,8 @@ Instructions:
                 )}
 
                 <div className="job-meta">
-                  {job.location && <span>📍 {job.location}</span>}
-                  {job.salary && <span>💰 {job.salary}</span>}
+                  {job.location && <span> {job.location}</span>}
+                  {job.salary && <span>{job.salary}</span>}
                   {job.url && <span><a href={job.url} target="_blank" rel="noreferrer">🔗 Link</a></span>}
                 </div>
 
@@ -498,7 +498,7 @@ Instructions:
                       transition: "all 0.2s", whiteSpace: "nowrap",
                     }}
                   >
-                    {generatingCoverLetter === job._id ? "⏳ Generating..." : "✉️ Cover Letter"}
+                    {generatingCoverLetter === job._id ? " Generating..." : "Cover Letter"}
                   </button>
                   <button
                     onClick={() => handleGenerateEmailDraft(job)}
@@ -512,7 +512,7 @@ Instructions:
                       transition: "all 0.2s", whiteSpace: "nowrap",
                     }}
                   >
-                    {generatingEmailDraft === job._id ? "⏳ Generating..." : "📧 Email Draft"}
+                    {generatingEmailDraft === job._id ? " Generating..." : " Email Draft"}
                   </button>
                 </div>
               </div>

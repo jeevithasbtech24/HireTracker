@@ -113,7 +113,7 @@ export default function ResumeScore({ user, onBack }) {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>📄 Resume Score</h1>
+        <h1>Resume Score</h1>
         <button
           onClick={onBack}
           style={{
@@ -157,7 +157,7 @@ export default function ResumeScore({ user, onBack }) {
         >
           <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📎</div>
           <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#3f3f46" }}>
-            {file ? `✅ ${file.name}` : "Click to upload PDF"}
+            {file ? ` ${file.name}` : "Click to upload PDF"}
           </div>
           <div style={{ fontSize: "0.8rem", color: "#a1a1aa", marginTop: "4px" }}>
             PDF files only
@@ -194,7 +194,7 @@ export default function ResumeScore({ user, onBack }) {
             transition: "all 0.2s",
           }}
         >
-          {loading ? "⏳ Analyzing Resume..." : "🔍 Analyze Resume"}
+          {loading ? "Analyzing Resume..." : "Analyze Resume"}
         </button>
       </div>
 
@@ -243,7 +243,7 @@ export default function ResumeScore({ user, onBack }) {
           {/* Summary */}
           <div className="stat-card" style={{ padding: "1.5rem", marginBottom: "1rem" }}>
             <h3 style={{ fontWeight: "700", marginBottom: "0.6rem", fontSize: "0.95rem" }}>
-              📝 Summary
+              Summary
             </h3>
             <p style={{ fontSize: "0.9rem", color: "#3f3f46", lineHeight: "1.6" }}>
               {result.summary}
@@ -253,7 +253,7 @@ export default function ResumeScore({ user, onBack }) {
           {/* Section Scores */}
           <div className="stat-card" style={{ padding: "1.5rem", marginBottom: "1rem" }}>
             <h3 style={{ fontWeight: "700", marginBottom: "1rem", fontSize: "0.95rem" }}>
-              📊 Section Breakdown
+              Section Breakdown
             </h3>
             {Object.entries(result.sections).map(([key, val]) => (
               <div key={key} style={{ marginBottom: "0.8rem" }}>
@@ -304,7 +304,7 @@ export default function ResumeScore({ user, onBack }) {
           >
             <div className="stat-card" style={{ padding: "1.5rem" }}>
               <h3 style={{ fontWeight: "700", marginBottom: "0.8rem", fontSize: "0.95rem", color: "#16a34a" }}>
-                ✅ Strengths
+                Strengths
               </h3>
               {result.strengths.map((s, i) => (
                 <div
@@ -322,7 +322,7 @@ export default function ResumeScore({ user, onBack }) {
             </div>
             <div className="stat-card" style={{ padding: "1.5rem" }}>
               <h3 style={{ fontWeight: "700", marginBottom: "0.8rem", fontSize: "0.95rem", color: "#dc2626" }}>
-                ⚠️ Improvements
+                 Improvements
               </h3>
               {result.improvements.map((s, i) => (
                 <div
@@ -351,7 +351,7 @@ export default function ResumeScore({ user, onBack }) {
             }}
           >
             <h3 style={{ fontWeight: "700", marginBottom: "0.4rem", fontSize: "0.9rem", color: "#7c3aed" }}>
-              💡 Top Tip
+              Top Tip
             </h3>
             <p style={{ fontSize: "0.88rem", color: "#3f3f46" }}>{result.tip}</p>
           </div>

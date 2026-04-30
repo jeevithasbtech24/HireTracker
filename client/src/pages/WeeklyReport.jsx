@@ -132,7 +132,7 @@ Instructions:
       {/* Header */}
       <div className="dashboard-header">
         <div>
-          <h1>📊 Weekly Report</h1>
+          <h1>Weekly Report</h1>
           <p style={{ fontSize: "0.88rem", color: "#71717a", marginTop: "4px" }}>
             {weekLabel}
           </p>
@@ -169,7 +169,7 @@ Instructions:
               transition: "all 0.2s",
             }}
           >
-            {loading ? "⏳ Generating..." : "✨ Generate Report"}
+            {loading ? " Generating..." : " Generate Report"}
           </button>
         </div>
       </div>
@@ -213,7 +213,7 @@ Instructions:
           {/* Daily Bar Chart */}
           <div className="stat-card" style={{ padding: "1.5rem", marginBottom: "1.5rem" }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "1rem" }}>
-              📅 Daily Activity This Week
+              Daily Activity This Week
             </h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={dailyData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
@@ -244,7 +244,7 @@ Instructions:
             }}
           >
             <h3 style={{ fontWeight: "700", marginBottom: "0.8rem", fontSize: "0.95rem", color: "#7c3aed" }}>
-              🤖 AI Career Coach Insight
+              AI Career Coach Insight
             </h3>
             <p style={{ fontSize: "0.9rem", color: "#3f3f46", lineHeight: "1.7", whiteSpace: "pre-line" }}>
               {aiInsight}
@@ -264,7 +264,7 @@ Instructions:
               }}
             >
               <p style={{ fontSize: "0.9rem", color: "#92400e", fontWeight: "600" }}>
-                ⚠️ No applications added this week. Start applying to see your weekly stats!
+                No applications added this week. Start applying to see your weekly stats!
               </p>
             </div>
           )}

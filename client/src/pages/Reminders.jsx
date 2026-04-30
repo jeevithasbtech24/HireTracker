@@ -14,7 +14,7 @@ export default function Reminders({ user, onBack, showToast }) {
   const checkDueToday = useCallback(() => {
     const due = reminders.filter((r) => r.date === today);
     if (due.length > 0) {
-      showToast(`⏰ Due today: ${due.map((r) => r.text).join(", ")}`, "success");
+      showToast(` Due today: ${due.map((r) => r.text).join(", ")}`, "success");
     }
   }, []);
  
@@ -101,7 +101,7 @@ export default function Reminders({ user, onBack, showToast }) {
                 </div>
               )}
               <div className="job-title">{r.text}</div>
-              <div className="job-date" style={{ marginTop: "8px" }}>📅 {formatDate(r.date)}</div>
+              <div className="job-date" style={{ marginTop: "8px" }}> {formatDate(r.date)}</div>
               <div className="job-actions" style={{ marginTop: "12px" }}>
                 <button className="btn-delete" onClick={() => handleDelete(r.id)}>Delete</button>
               </div>

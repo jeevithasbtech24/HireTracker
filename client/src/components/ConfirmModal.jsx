@@ -11,7 +11,7 @@ export default function ConfirmModal({ message, onConfirm, onCancel }) {
         padding: "32px", maxWidth: "380px", width: "90%",
         textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
       }}>
-        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🗑️</div>
+        <div style={{ fontSize: "40px", marginBottom: "12px" }}></div>
         <h3 style={{ marginBottom: "8px", color: "#1e293b" }}>Are you sure?</h3>
         <p style={{ color: "#64748b", marginBottom: "24px" }}>{message}</p>
         <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
