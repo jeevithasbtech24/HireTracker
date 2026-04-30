@@ -282,10 +282,11 @@ Instructions:
     { name: "Saved", value: jobs.filter((j) => j.status === "Saved").length },
   ].filter((d) => d.value > 0);
 
+  // ✅ FIX: Use getFullYear() instead of year: "2-digit" to avoid "Apr 26" bug
   const monthMap = {};
   jobs.forEach((j) => {
     const d = new Date(j.appliedAt || j.createdAt);
-    const month = d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+    const month = `${d.toLocaleDateString("en-GB", { month: "short" })} ${d.getFullYear()}`;
     monthMap[month] = (monthMap[month] || 0) + 1;
   });
   const barData = Object.entries(monthMap).map(([month, count]) => ({ month, count }));
