@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = "https://hiretracker-api.onrender.com/api";
 
 const getToken = () => {
   const user = JSON.parse(localStorage.getItem("ht_user") || "{}");
