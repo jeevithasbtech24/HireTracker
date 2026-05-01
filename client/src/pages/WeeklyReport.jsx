@@ -3,8 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
 } from "recharts";
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
+import { getJobs } from "../services/api";
 
 export default function WeeklyReport({ user, onBack }) {
   const [weekStats, setWeekStats] = useState(null);
@@ -36,9 +35,8 @@ export default function WeeklyReport({ user, onBack }) {
   const computeStats = (jobs) => {
     const { monday, sunday } = getWeekRange();
 
-    // ✅ Fix: normalize job dates properly
     const weekJobs = jobs.filter((j) => {
-      const d = new Date(j.date);
+      const d = new Date(j.appliedAt || j.createdAt);
       if (isNaN(d)) return false;
       return d >= monday && d <= sunday;
     });
@@ -52,13 +50,12 @@ export default function WeeklyReport({ user, onBack }) {
       saved: weekJobs.filter((j) => j.status === "Saved").length,
     };
 
-    // ✅ Fix: use isSameDay instead of toDateString comparison
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const daily = days.map((day, i) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       const count = weekJobs.filter((j) => {
-        const d = new Date(j.date);
+        const d = new Date(j.appliedAt || j.createdAt);
         if (isNaN(d)) return false;
         return isSameDay(d, date);
       }).length;
@@ -73,15 +70,15 @@ export default function WeeklyReport({ user, onBack }) {
     setGenerated(false);
     setAiInsight("");
 
-    // ✅ Fix: read directly from localStorage so we always get fresh data
-    const storageKey = `ht_jobs_${user.email}`;
-    const jobs = JSON.parse(localStorage.getItem(storageKey) || "[]");
-
-    const { stats, daily, weekJobs, monday, sunday } = computeStats(jobs);
-    setWeekStats({ ...stats, monday, sunday });
-    setDailyData(daily);
-
     try {
+      // Fetch jobs from backend
+      const jobs = await getJobs();
+      if (!Array.isArray(jobs)) throw new Error("Failed to fetch jobs");
+
+      const { stats, daily, weekJobs, monday, sunday } = computeStats(jobs);
+      setWeekStats({ ...stats, monday, sunday });
+      setDailyData(daily);
+
       const allTimeTotal = jobs.length;
       const allTimeApplied = jobs.filter((j) => j.status === "Applied").length;
       const allTimeInterview = jobs.filter((j) => j.status === "Interview").length;
@@ -103,23 +100,23 @@ Instructions:
 - Keep it under 150 words
 - Write naturally, no bullet points`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      );
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_KEY}`,
+          "HTTP-Referer": "http://localhost:5173",
+          "X-Title": "HireTracker",
+        },
+        body: JSON.stringify({
+          model: "openrouter/free",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
 
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
-
-      const text =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Could not generate insight.";
+      const text = data.choices?.[0]?.message?.content || "Could not generate insight.";
 
       setAiInsight(text);
       setGenerated(true);
@@ -137,7 +134,6 @@ Instructions:
 
   return (
     <div className="dashboard">
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1>Weekly Report</h1>
@@ -149,14 +145,9 @@ Instructions:
           <button
             onClick={onBack}
             style={{
-              background: "none",
-              border: "1.5px solid #e4e4e7",
-              color: "#7d7db3",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              fontSize: "0.88rem",
-              fontWeight: "600",
-              cursor: "pointer",
+              background: "none", border: "1.5px solid #e4e4e7",
+              color: "#7d7db3", padding: "8px 16px", borderRadius: "8px",
+              fontSize: "0.88rem", fontWeight: "600", cursor: "pointer",
             }}
           >
             ← Back
@@ -166,15 +157,10 @@ Instructions:
             disabled={loading}
             style={{
               background: loading ? "#a78bfa" : "#b2a3ef",
-              color: "white",
-              border: "none",
-              padding: "8px 20px",
-              borderRadius: "8px",
-              fontSize: "0.9rem",
-              fontWeight: "600",
+              color: "white", border: "none", padding: "8px 20px",
+              borderRadius: "8px", fontSize: "0.9rem", fontWeight: "600",
               cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.8 : 1,
-              transition: "all 0.2s",
+              opacity: loading ? 0.8 : 1, transition: "all 0.2s",
             }}
           >
             {loading ? "Generating..." : "Generate Report"}
@@ -182,7 +168,6 @@ Instructions:
         </div>
       </div>
 
-      {/* Empty state */}
       {!generated && !loading && (
         <div className="empty-state" style={{ marginTop: "4rem" }}>
           <h3>Ready to see your weekly progress?</h3>
@@ -190,10 +175,8 @@ Instructions:
         </div>
       )}
 
-      {/* Results */}
       {generated && weekStats && (
         <>
-          {/* Stat Cards */}
           <div className="stats-grid" style={{ marginBottom: "1.5rem" }}>
             <div className="stat-card">
               <div className="stat-num">{weekStats.total}</div>
@@ -217,7 +200,6 @@ Instructions:
             </div>
           </div>
 
-          {/* Daily Bar Chart */}
           <div className="stat-card" style={{ padding: "1.5rem", marginBottom: "1.5rem" }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "1rem" }}>
               Daily Activity This Week
@@ -227,29 +209,13 @@ Instructions:
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                 <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#71717a" }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#71717a" }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#fff",
-                    border: "1px solid #e4e4e7",
-                    borderRadius: "8px",
-                    color: "#0f0f0f",
-                  }}
-                />
+                <Tooltip contentStyle={{ background: "#fff", border: "1px solid #e4e4e7", borderRadius: "8px", color: "#0f0f0f" }} />
                 <Bar dataKey="count" fill="#7c3aed" radius={[6, 6, 0, 0]} name="Applications" />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* AI Insight */}
-          <div
-            className="stat-card"
-            style={{
-              padding: "1.5rem",
-              marginBottom: "2rem",
-              borderLeft: "4px solid #7c3aed",
-              background: "#dcc8f1",
-            }}
-          >
+          <div className="stat-card" style={{ padding: "1.5rem", marginBottom: "2rem", borderLeft: "4px solid #7c3aed", background: "#dcc8f1" }}>
             <h3 style={{ fontWeight: "700", marginBottom: "0.8rem", fontSize: "0.95rem", color: "#7c3aed" }}>
               AI Career Coach Insight
             </h3>
@@ -258,18 +224,8 @@ Instructions:
             </p>
           </div>
 
-          {/* No activity message */}
           {weekStats.total === 0 && (
-            <div
-              className="stat-card"
-              style={{
-                padding: "1.5rem",
-                textAlign: "center",
-                marginBottom: "1.5rem",
-                borderLeft: "4px solid #fbbf24",
-                background: "#fffbeb",
-              }}
-            >
+            <div className="stat-card" style={{ padding: "1.5rem", textAlign: "center", marginBottom: "1.5rem", borderLeft: "4px solid #fbbf24", background: "#fffbeb" }}>
               <p style={{ fontSize: "0.9rem", color: "#92400e", fontWeight: "600" }}>
                 No applications added this week. Start applying to see your weekly stats!
               </p>

@@ -19,8 +19,6 @@ const BADGE_CLASS = {
 
 const PIE_COLORS = ["#3c48a4", "#888dc9", "#809be6", "#8f8fdd", "#c0abff"];
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
-
 export default function Dashboard({ user }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,14 +30,11 @@ export default function Dashboard({ user }) {
   const [generatingCoverLetter, setGeneratingCoverLetter] = useState(null);
   const [generatingEmailDraft, setGeneratingEmailDraft] = useState(null);
 
-  // Load jobs from backend on mount
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         const data = await getJobs();
-        if (Array.isArray(data)) {
-          setJobs(data);
-        }
+        if (Array.isArray(data)) setJobs(data);
       } catch (err) {
         console.error("Failed to fetch jobs:", err);
       } finally {
@@ -78,6 +73,26 @@ export default function Dashboard({ user }) {
     }
   };
 
+  // ---- OpenRouter AI call helper ----
+  const callAI = async (prompt) => {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_KEY}`,
+        "HTTP-Referer": "http://localhost:5173",
+        "X-Title": "HireTracker",
+      },
+      body: JSON.stringify({
+        model: "openrouter/free",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message || "AI error");
+    return data.choices?.[0]?.message?.content || "";
+  };
+
   const handleGenerateCoverLetter = async (job) => {
     const storedUser = JSON.parse(localStorage.getItem("ht_user") || "{}");
     const bio = storedUser.bio || "";
@@ -112,21 +127,7 @@ Instructions:
 - Do NOT include placeholders like [Your Address] or [Date]
 - Keep it under 300 words, professional and confident`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message || "Gemini API error");
-
-      const letterText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate cover letter.";
+      const letterText = await callAI(prompt);
 
       const doc = new jsPDF();
       doc.setFontSize(18);
@@ -179,21 +180,7 @@ Instructions:
 - End with applicant name: ${userName}
 - Do NOT include placeholders like [Your Phone] or [Date]`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message || "Gemini API error");
-
-      const emailText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate email draft.";
+      const emailText = await callAI(prompt);
 
       const doc = new jsPDF();
       doc.setFontSize(18);
@@ -282,7 +269,6 @@ Instructions:
     { name: "Saved", value: jobs.filter((j) => j.status === "Saved").length },
   ].filter((d) => d.value > 0);
 
-  // ✅ FIX: Use getFullYear() instead of year: "2-digit" to avoid "Apr 26" bug
   const monthMap = {};
   jobs.forEach((j) => {
     const d = new Date(j.appliedAt || j.createdAt);
@@ -353,30 +339,29 @@ Instructions:
         </div>
       </div>
 
-    <div className="stats-grid">
-  <div className="stat-card" style={{ borderTop: 'none', background: '#fdf2f8' }}>
-    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.total}</div>
-    <div className="stat-label">Total</div>
-  </div>
-  <div className="stat-card blue" style={{ borderTop: 'none', background: '#fdf2f8' }}>
-    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.applied}</div>
-    <div className="stat-label">Applied</div>
-  </div>
-  <div className="stat-card amber" style={{ borderTop: 'none', background: '#fdf2f8' }}>
-    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.interview}</div>
-    <div className="stat-label">Interviews</div>
-  </div>
-  <div className="stat-card green" style={{ borderTop: 'none', background: '#fdf2f8' }}>
-    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.offer}</div>
-    <div className="stat-label">Offers</div>
-  </div>
-  <div className="stat-card red" style={{ borderTop: 'none', background: '#fdf2f8' }}>
-    <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.rejected}</div>
-    <div className="stat-label">Rejected</div>
-  </div>
-</div>
+      <div className="stats-grid">
+        <div className="stat-card" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+          <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.total}</div>
+          <div className="stat-label">Total</div>
+        </div>
+        <div className="stat-card blue" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+          <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.applied}</div>
+          <div className="stat-label">Applied</div>
+        </div>
+        <div className="stat-card amber" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+          <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.interview}</div>
+          <div className="stat-label">Interviews</div>
+        </div>
+        <div className="stat-card green" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+          <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.offer}</div>
+          <div className="stat-label">Offers</div>
+        </div>
+        <div className="stat-card red" style={{ borderTop: 'none', background: '#fdf2f8' }}>
+          <div className="stat-num" style={{ color: '#3b82f6' }}>{stats.rejected}</div>
+          <div className="stat-label">Rejected</div>
+        </div>
+      </div>
 
-     {/* Charts */}
       {jobs.length > 0 && (
         <div style={{
           display: "grid",
@@ -418,7 +403,6 @@ Instructions:
         </div>
       )}
 
-      {/* Filters */}
       <div className="filters">
         <input
           className="filter-search"
@@ -438,7 +422,7 @@ Instructions:
           <option value="company">Company A-Z</option>
         </select>
       </div>
-     {/* Job Cards */}
+
       {filtered.length === 0 ? (
         <div className="empty-state">
           <h3>No applications found</h3>
@@ -473,7 +457,7 @@ Instructions:
                 )}
 
                 <div className="job-meta">
-                  {job.location && <span> {job.location}</span>}
+                  {job.location && <span>{job.location}</span>}
                   {job.salary && <span>{job.salary}</span>}
                   {job.url && <span><a href={job.url} target="_blank" rel="noreferrer">🔗 Link</a></span>}
                 </div>
@@ -496,7 +480,7 @@ Instructions:
                       transition: "all 0.2s", whiteSpace: "nowrap",
                     }}
                   >
-                    {generatingCoverLetter === job._id ? " Generating..." : "Cover Letter"}
+                    {generatingCoverLetter === job._id ? "⏳ Generating..." : "✉️ Cover Letter"}
                   </button>
                   <button
                     onClick={() => handleGenerateEmailDraft(job)}
@@ -510,7 +494,7 @@ Instructions:
                       transition: "all 0.2s", whiteSpace: "nowrap",
                     }}
                   >
-                    {generatingEmailDraft === job._id ? " Generating..." : " Email Draft"}
+                    {generatingEmailDraft === job._id ? "⏳ Generating..." : "📧 Email Draft"}
                   </button>
                 </div>
               </div>
