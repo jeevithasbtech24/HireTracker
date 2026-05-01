@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
@@ -7,18 +7,11 @@ import {
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
 export default function WeeklyReport({ user, onBack }) {
-  const [jobs, setJobs] = useState([]);
   const [weekStats, setWeekStats] = useState(null);
   const [dailyData, setDailyData] = useState([]);
   const [aiInsight, setAiInsight] = useState("");
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
-
-  useEffect(() => {
-    const storageKey = `ht_jobs_${user.email}`;
-    const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    setJobs(stored);
-  }, [user]);
 
   const getWeekRange = () => {
     const now = new Date();
@@ -32,11 +25,21 @@ export default function WeeklyReport({ user, onBack }) {
     return { monday, sunday };
   };
 
-  const computeStats = () => {
+  const isSameDay = (d1, d2) => {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
+  const computeStats = (jobs) => {
     const { monday, sunday } = getWeekRange();
 
+    // ✅ Fix: normalize job dates properly
     const weekJobs = jobs.filter((j) => {
       const d = new Date(j.date);
+      if (isNaN(d)) return false;
       return d >= monday && d <= sunday;
     });
 
@@ -49,14 +52,15 @@ export default function WeeklyReport({ user, onBack }) {
       saved: weekJobs.filter((j) => j.status === "Saved").length,
     };
 
-    // Daily breakdown Mon-Sun
+    // ✅ Fix: use isSameDay instead of toDateString comparison
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const daily = days.map((day, i) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       const count = weekJobs.filter((j) => {
         const d = new Date(j.date);
-        return d.toDateString() === date.toDateString();
+        if (isNaN(d)) return false;
+        return isSameDay(d, date);
       }).length;
       return { day, count };
     });
@@ -69,7 +73,11 @@ export default function WeeklyReport({ user, onBack }) {
     setGenerated(false);
     setAiInsight("");
 
-    const { stats, daily, weekJobs, monday, sunday } = computeStats();
+    // ✅ Fix: read directly from localStorage so we always get fresh data
+    const storageKey = `ht_jobs_${user.email}`;
+    const jobs = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+    const { stats, daily, weekJobs, monday, sunday } = computeStats(jobs);
     setWeekStats({ ...stats, monday, sunday });
     setDailyData(daily);
 
@@ -143,7 +151,7 @@ Instructions:
             style={{
               background: "none",
               border: "1.5px solid #e4e4e7",
-              color: "#3f3f46",
+              color: "#7d7db3",
               padding: "8px 16px",
               borderRadius: "8px",
               fontSize: "0.88rem",
@@ -157,7 +165,7 @@ Instructions:
             onClick={handleGenerate}
             disabled={loading}
             style={{
-              background: loading ? "#5b21b6" : "#7c3aed",
+              background: loading ? "#a78bfa" : "#b2a3ef",
               color: "white",
               border: "none",
               padding: "8px 20px",
@@ -169,15 +177,14 @@ Instructions:
               transition: "all 0.2s",
             }}
           >
-            {loading ? " Generating..." : " Generate Report"}
+            {loading ? "Generating..." : "Generate Report"}
           </button>
         </div>
       </div>
 
-      {/* Empty state before generate */}
+      {/* Empty state */}
       {!generated && !loading && (
         <div className="empty-state" style={{ marginTop: "4rem" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📊</div>
           <h3>Ready to see your weekly progress?</h3>
           <p>Click "Generate Report" to get your stats and AI insight for this week.</p>
         </div>
@@ -240,7 +247,7 @@ Instructions:
               padding: "1.5rem",
               marginBottom: "2rem",
               borderLeft: "4px solid #7c3aed",
-              background: "#faf5ff",
+              background: "#dcc8f1",
             }}
           >
             <h3 style={{ fontWeight: "700", marginBottom: "0.8rem", fontSize: "0.95rem", color: "#7c3aed" }}>

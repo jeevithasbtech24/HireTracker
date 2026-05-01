@@ -85,13 +85,11 @@ a:hover { text-decoration: underline; }
 }
 
 .navbar-user {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--brand);
-  background: var(--brand-light);
-  padding: 5px 12px;
+  background-color: #806fb6;  /* purple */
+  color: #ffffff;
+  padding: 4px 12px;
   border-radius: 20px;
-  margin-right: 4px;
+  font-weight: 500;
 }
 
 .btn-nav {

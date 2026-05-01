@@ -183,7 +183,7 @@ export default function ResumeScore({ user, onBack }) {
           style={{
             width: "100%",
             padding: "12px",
-            background: loading ? "#5b21b6" : "#7c3aed",
+            background: loading ? "#5b21b6" : "#967bc9",
             color: "white",
             border: "none",
             borderRadius: "8px",
@@ -346,7 +346,7 @@ export default function ResumeScore({ user, onBack }) {
             style={{
               padding: "1.2rem 1.5rem",
               marginBottom: "2rem",
-              borderLeft: "4px solid #7c3aed",
+              borderLeft: "4px solid #aa8eda",
               background: "#faf5ff",
             }}
           >
