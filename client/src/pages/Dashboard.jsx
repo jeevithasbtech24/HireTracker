@@ -246,18 +246,19 @@ Instructions:
     doc.save("HireTracker_Applications.pdf");
   };
 
+  // ✅ FIXED: safe toLowerCase to prevent crash on undefined fields
   const filtered = jobs
     .filter((j) => {
       const matchSearch =
-        j.title.toLowerCase().includes(search.toLowerCase()) ||
-        j.company.toLowerCase().includes(search.toLowerCase());
+        (j.title || "").toLowerCase().includes(search.toLowerCase()) ||
+        (j.company || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = filterStatus === "All" || j.status === filterStatus;
       return matchSearch && matchStatus;
     })
     .sort((a, b) => {
       if (sortBy === "newest") return new Date(b.appliedAt || b.createdAt) - new Date(a.appliedAt || a.createdAt);
       if (sortBy === "oldest") return new Date(a.appliedAt || a.createdAt) - new Date(b.appliedAt || b.createdAt);
-      if (sortBy === "company") return a.company.localeCompare(b.company);
+      if (sortBy === "company") return (a.company || "").localeCompare(b.company || "");
       return 0;
     });
 
